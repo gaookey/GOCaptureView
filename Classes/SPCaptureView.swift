@@ -167,7 +167,7 @@ public class SPCaptureView: UIView, SPCaptureViewDelegate {
             if bounds.height > bounds.width {
                 previewView.frame = CGRect(x: 0, y: (bounds.height - bounds.width * 4.0 / 3.0) / 2.0, width: bounds.width, height: bounds.width * 4.0 / 3.0)
             } else {
-                previewView.frame = CGRect(x: (bounds.width - bounds.height * 4.0 / 3.0) / 2.0, y: 0, width: bounds.height * 4.0 / 3.0, height: bounds.height)
+                previewView.frame = CGRect(x: (bounds.width - bounds.height * 3.0 / 4.0) / 2.0, y: 0, width: bounds.height * 3.0 / 4.0, height: bounds.height)
             }
         }
         

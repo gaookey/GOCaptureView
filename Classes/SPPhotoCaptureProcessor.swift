@@ -6,6 +6,7 @@
 //  Copyright © 2020 mouos. All rights reserved.
 //
 
+import UIKit
 import AVFoundation
 import Photos
 
@@ -26,15 +27,21 @@ class SPPhotoCaptureProcessor: NSObject {
     private var error: Error?
     private var photoData: Data?
     private var livePhotoCompanionMovieURL: URL?
+    private var imageScale: CGFloat = 0
+    private var isLivePhoto = false
     
-    init(_ isSavePhotoAlbum: Bool = false,
-         _ requestedPhotoSettings: AVCapturePhotoSettings,
+    init(isLivePhoto: Bool = false,
+         imageScale: CGFloat,
+         isSavePhotoAlbum: Bool = false,
+         requestedPhotoSettings: AVCapturePhotoSettings,
          willCapturePhotoAnimation: @escaping () -> Void,
          livePhotoCaptureHandler: @escaping (Bool) -> Void,
          completionHandler: @escaping (Data?, String?, [Data], Error?, SPPhotoCaptureProcessor) -> Void,
          photoProcessingHandler: @escaping (Bool) -> Void,
          savePhotoAlbumHandler: @escaping (Bool) -> Void) {
         
+        self.isLivePhoto = isLivePhoto
+        self.imageScale = imageScale
         self.isSavePhotoAlbum = isSavePhotoAlbum
         self.requestedPhotoSettings = requestedPhotoSettings
         self.willCapturePhotoAnimation = willCapturePhotoAnimation
@@ -90,7 +97,7 @@ extension SPPhotoCaptureProcessor: AVCapturePhotoCaptureDelegate {
         if let error = error {
             print("Error capturing photo: \(error)")
         } else {
-            photoData = photo.fileDataRepresentation()
+            photoData = crop(data: photo.fileDataRepresentation()!, scale: imageScale)
         }
         
         if var portraitEffectsMatte = photo.portraitEffectsMatte {
@@ -225,6 +232,38 @@ extension SPPhotoCaptureProcessor {
                                                          colorSpace: perceptualColorSpace,
                                                          options: [.depthImage: ciImage]) else { return }
         
-        semanticSegmentationMatteDatas.append(imageData)
+        semanticSegmentationMatteDatas.append(crop(data: imageData, scale: imageScale))
+    }
+    
+    func crop(data: Data, scale: CGFloat) -> Data {
+        
+        guard !self.isLivePhoto else {
+            return data
+        }
+        
+        guard let image = UIImage(data: data) else {
+            return data
+        }
+        
+        var x: CGFloat = 0, y: CGFloat = 0, width: CGFloat = 0, height: CGFloat = 0
+        
+        if (image.size.width / image.size.height) > scale {
+            height = image.size.height
+            width = image.size.height * scale
+            x = (image.size.width - width) / 2.0
+        } else {
+            width = image.size.width
+            height = image.size.height / scale
+            y = (image.size.height - height) / 2.0
+        }
+        
+        let rect = CGRect(x: x, y: y, width: width, height: height)
+        
+        UIGraphicsBeginImageContextWithOptions(rect.size, false, scale)
+        image.draw(at: CGPoint(x: -rect.origin.x, y: -rect.origin.y))
+        let image2 = UIGraphicsGetImageFromCurrentImageContext()
+        UIGraphicsEndImageContext()
+        return image2!.jpegData(compressionQuality: 1)!
     }
 }
+

@@ -27,7 +27,7 @@ public extension SPCaptureViewDelegate {
     func didFinishRecording(_ view: UIView, videoPath: String, error: Error?) { }
     func didFinishCapture(_ view: UIView, photoData: Data?, moviePath: String?, semanticSegmentationMatteDatas: [Data], error: Error?) { }
     func didFinishSavePhotoAlbum(_ view: UIView, success: Bool) { }
-
+    
     func setupCamera(_ view: UIView, setupResult: Int) { }
     func resume(_ view: UIView, success: Bool) { }
     func photoProcessing(_ view: UIView, animate: Bool) { }
@@ -103,6 +103,7 @@ public class SPCaptureView: UIView, SPCaptureViewDelegate {
     private let photoOutput = AVCapturePhotoOutput()
     private var semanticSegmentationMatteTypes = [AVSemanticSegmentationMatte.MatteType]()
     
+    private var imageScale: CGFloat = 0
     private var windowOrientation: UIInterfaceOrientation {
         return window?.windowScene?.interfaceOrientation ?? .unknown
     }
@@ -112,11 +113,7 @@ public class SPCaptureView: UIView, SPCaptureViewDelegate {
         return tap
     }()
     
-    private lazy var previewView: SPPreviewView = {
-        let view = SPPreviewView(frame: self.bounds)
-        view.session = session
-        return view
-    }()
+    private lazy var previewView = SPPreviewView()
     
     private lazy var focusImageView: UIImageView = {
         let image = UIImageView(frame: CGRect(x: 0, y: 0, width: 80, height: 80))
@@ -125,9 +122,10 @@ public class SPCaptureView: UIView, SPCaptureViewDelegate {
         return image
     }()
     
-    override init(frame: CGRect) {
+    public override init(frame: CGRect) {
         super.init(frame: frame)
         
+        previewView.session = session
         addSubview(previewView)
         
         switch AVCaptureDevice.authorizationStatus(for: .video) {
@@ -158,6 +156,26 @@ public class SPCaptureView: UIView, SPCaptureViewDelegate {
     
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    }
+    
+    public override func layoutSubviews() {
+        super.layoutSubviews()
+        
+        if livePhotoMode == .off {
+            previewView.frame = bounds
+        } else {
+            if bounds.height > bounds.width {
+                previewView.frame = CGRect(x: 0, y: (bounds.height - bounds.width * 4.0 / 3.0) / 2.0, width: bounds.width, height: bounds.width * 4.0 / 3.0)
+            } else {
+                previewView.frame = CGRect(x: (bounds.width - bounds.height * 4.0 / 3.0) / 2.0, y: 0, width: bounds.height * 4.0 / 3.0, height: bounds.height)
+            }
+        }
+        
+        imageScale = bounds.width / bounds.height
+    }
+    
+    deinit {
+        NotificationCenter.default.removeObserver(self)
     }
 }
 
@@ -233,7 +251,7 @@ extension SPCaptureView {
             photoOutput.enabledSemanticSegmentationMatteTypes = photoOutput.availableSemanticSegmentationMatteTypes
             semanticSegmentationMatteTypes = photoOutput.availableSemanticSegmentationMatteTypes
             photoOutput.maxPhotoQualityPrioritization = .quality
-            livePhotoMode = photoOutput.isLivePhotoCaptureSupported ? .on : .off
+            //livePhotoMode = photoOutput.isLivePhotoCaptureSupported ? .on : .off
             depthDataDeliveryMode = photoOutput.isDepthDataDeliverySupported ? .on : .off
             portraitEffectsMatteDeliveryMode = photoOutput.isPortraitEffectsMatteDeliverySupported ? .on : .off
             photoQualityPrioritizationMode = .balanced
@@ -263,6 +281,8 @@ extension SPCaptureView {
                 break
             }
         }
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(orientationNotification(_:)), name: NSNotification.Name(rawValue: UIApplication.didChangeStatusBarOrientationNotification.rawValue), object: nil)
     }
 }
 
@@ -429,21 +449,14 @@ extension SPCaptureView {
 public extension SPCaptureView {
     
     /// LivePhoto on/off
-    func toggleLivePhotoMode(completionHandler: ((_ isLivePhoto: Bool) -> ())? = nil) {
+    func toggleLivePhotoMode() {
         guard captureMode == .photo && isToggleLivePhotoEnabled else {
-            if let handler = completionHandler {
-                handler(self.livePhotoMode == .on)
-            }
             return
         }
-        sessionQueue.async {
+        
+        DispatchQueue.main.async {
             self.livePhotoMode = (self.livePhotoMode == .on) ? .off : .on
-            
-            DispatchQueue.main.async {
-                if let handler = completionHandler {
-                    handler(self.livePhotoMode == .on)
-                }
-            }
+            self.layoutSubviews()
         }
     }
     
@@ -561,7 +574,7 @@ public extension SPCaptureView {
             
             photoSettings.photoQualityPrioritization = self.photoQualityPrioritizationMode
             
-            let photoCaptureProcessor = SPPhotoCaptureProcessor(self.isSavePhotoAlbum, photoSettings, willCapturePhotoAnimation: {
+            let photoCaptureProcessor = SPPhotoCaptureProcessor(isLivePhoto: (self.livePhotoMode == .on), imageScale: self.imageScale, isSavePhotoAlbum: self.isSavePhotoAlbum, requestedPhotoSettings: photoSettings, willCapturePhotoAnimation: {
                 
                 //                DispatchQueue.main.async {
                 //                    self.previewView.videoPreviewLayer.opacity = 0
@@ -815,9 +828,6 @@ public extension SPCaptureView {
             return
         }
         
-        print(device.activeFormat.minISO, device.activeFormat.maxISO)
-        //(device.activeFormat.minISO < value < device.activeFormat.maxISO)
-        
         do {
             try device.lockForConfiguration()
             device.setExposureModeCustom(duration: device.exposureDuration, iso: value, completionHandler: { (time) in })
@@ -962,11 +972,26 @@ extension SPCaptureView: AVCaptureFileOutputRecordingDelegate {
             cleanup()
         }
         
-            self.delegate?.didFinishRecording(self, videoPath: outputFileURL.path, error: error)
-            
-            self.isTakePhotoEnabled = true
-            self.isToggleCameraEnabled = self.videoDeviceDiscoverySession.uniqueDevicePositionsCount > 1
-            self.isToggleToPhotoOrVideoEnabled = true
+        self.delegate?.didFinishRecording(self, videoPath: outputFileURL.path, error: error)
+        
+        self.isTakePhotoEnabled = true
+        self.isToggleCameraEnabled = self.videoDeviceDiscoverySession.uniqueDevicePositionsCount > 1
+        self.isToggleToPhotoOrVideoEnabled = true
+    }
+}
+
+extension SPCaptureView {
+    
+    @objc func orientationNotification(_ noti: Notification) {
+        
+        if let videoPreviewLayerConnection = previewView.videoPreviewLayer.connection {
+            let deviceOrientation = UIDevice.current.orientation
+            guard let newVideoOrientation = AVCaptureVideoOrientation(deviceOrientation: deviceOrientation),
+                deviceOrientation.isPortrait || deviceOrientation.isLandscape else {
+                    return
+            }
+            videoPreviewLayerConnection.videoOrientation = newVideoOrientation
+        }
     }
 }
 
@@ -1002,3 +1027,4 @@ extension AVCaptureDevice.DiscoverySession {
         return uniqueDevicePositions.count
     }
 }
+

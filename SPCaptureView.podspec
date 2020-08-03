@@ -1,7 +1,7 @@
 Pod::Spec.new do |spec|
  
   spec.name                   = 'SPCaptureView'
-  spec.version                = '0.0.1'
+  spec.version                = '0.0.2'
   spec.summary                = 'A simple custom camera.'
   spec.homepage               = 'https://mouos.com'
   spec.license                = { :type => 'MIT', :file => 'LICENSE' }

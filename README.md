@@ -1,6 +1,6 @@
 # SPCaptureView
 
-### 自定义相机
+### 自定义相机 demo
 
 ### 安装
 

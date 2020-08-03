@@ -9,7 +9,7 @@ Pod::Spec.new do |spec|
   spec.platform               = :ios, "13.0"
   spec.source                 = { :git => "https://github.com/mouos/SPCaptureView.git", :tag => spec.version }
   spec.source_files           = "Classes/**/*"
-  spec.resource               = 'SPCaptureView/SPCaptureView.bundle'
+  spec.resource               = 'Classes/SPCaptureView.bundle'
   spec.swift_version          = '5.0'
  
  end

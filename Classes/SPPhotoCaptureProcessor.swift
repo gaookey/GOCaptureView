@@ -253,7 +253,7 @@ extension SPPhotoCaptureProcessor {
             x = (image.size.width - width) / 2.0
         } else {
             width = image.size.width
-            height = image.size.height / scale
+            height = image.size.width / scale
             y = (image.size.height - height) / 2.0
         }
         

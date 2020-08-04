@@ -117,9 +117,9 @@ public class SPCaptureView: UIView, SPCaptureViewDelegate {
     
     private lazy var focusImageView: UIImageView = {
         let image = UIImageView(frame: CGRect(x: 0, y: 0, width: 80, height: 80))
-        let path = Bundle.main.path(forResource: "SPCaptureView", ofType: "bundle")
-        let bundle = Bundle(path: path!)
-        image.image = UIImage(named: "focus_image", in: bundle, compatibleWith: nil)!
+        if let img = UIImage(named: "focus_image") {
+            image.image = img
+        }
         image.isHidden = true
         return image
     }()

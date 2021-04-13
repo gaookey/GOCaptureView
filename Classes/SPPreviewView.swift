@@ -3,7 +3,6 @@
 //  SPCaptureView
 //
 //  Created by 高文立 on 2020/7/30.
-//  Copyright © 2020 mouos. All rights reserved.
 //
 
 import UIKit

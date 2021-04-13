@@ -3,7 +3,6 @@
 //  SPCaptureView
 //
 //  Created by 高文立 on 2020/7/30.
-//  Copyright © 2020 mouos. All rights reserved.
 //
 
 import UIKit
@@ -34,7 +33,7 @@ public extension SPCaptureViewDelegate {
     func sessionInterruption(_ view: UIView, ended: Bool) { }
 }
 
-public class SPCaptureView: UIView, SPCaptureViewDelegate {
+public class SPCaptureView: UIView {
     
     weak open var delegate: SPCaptureViewDelegate?
     
@@ -54,7 +53,7 @@ public class SPCaptureView: UIView, SPCaptureViewDelegate {
         case video
     }
     
-    private enum FlashMode : Int {
+    private enum FlashMode: Int {
         case off
         case on
         case auto

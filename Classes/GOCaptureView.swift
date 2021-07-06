@@ -1,6 +1,6 @@
 //
-//  SPCaptureView.swift
-//  SPCaptureView
+//  GOCaptureView.swift
+//  GOCaptureView
 //
 //  Created by 高文立 on 2020/7/30.
 //
@@ -9,33 +9,21 @@ import UIKit
 import AVFoundation
 import Photos
 
-public protocol SPCaptureViewDelegate: NSObjectProtocol {
+@objc public protocol GOCaptureViewDelegate: NSObjectProtocol {
     
-    func didFinishRecording(_ view: UIView, videoPath: String, error: Error?)
-    func didFinishCapture(_ view: UIView, photoData: Data?, moviePath: String?, semanticSegmentationMatteDatas: [Data], error: Error?)
-    func didFinishSavePhotoAlbum(_ view: UIView, success: Bool)
+    @objc optional func didFinishRecording(_ view: UIView, videoPath: String, error: Error?)
+    @objc optional func didFinishCapture(_ view: UIView, photoData: Data?, moviePath: String?, semanticSegmentationMatteDatas: [Data], error: Error?)
+    @objc optional func didFinishSavePhotoAlbum(_ view: UIView, success: Bool)
     
-    func setupCamera(_ view: UIView, setupResult: Int)
-    func resume(_ view: UIView, success: Bool)
-    func photoProcessing(_ view: UIView, animate: Bool)
-    func sessionInterruption(_ view: UIView, ended: Bool)
+    @objc optional func setupCamera(_ view: UIView, setupResult: Int)
+    @objc optional func resume(_ view: UIView, success: Bool)
+    @objc optional func photoProcessing(_ view: UIView, animate: Bool)
+    @objc optional func sessionInterruption(_ view: UIView, ended: Bool)
 }
 
-public extension SPCaptureViewDelegate {
+@objcMembers public class GOCaptureView: UIView {
     
-    func didFinishRecording(_ view: UIView, videoPath: String, error: Error?) { }
-    func didFinishCapture(_ view: UIView, photoData: Data?, moviePath: String?, semanticSegmentationMatteDatas: [Data], error: Error?) { }
-    func didFinishSavePhotoAlbum(_ view: UIView, success: Bool) { }
-    
-    func setupCamera(_ view: UIView, setupResult: Int) { }
-    func resume(_ view: UIView, success: Bool) { }
-    func photoProcessing(_ view: UIView, animate: Bool) { }
-    func sessionInterruption(_ view: UIView, ended: Bool) { }
-}
-
-public class SPCaptureView: UIView {
-    
-    weak open var delegate: SPCaptureViewDelegate?
+    weak open var delegate: GOCaptureViewDelegate?
     
     private enum SessionSetupResult: Int {
         case success
@@ -87,7 +75,7 @@ public class SPCaptureView: UIView {
     private var isToggleToPhotoOrVideoEnabled = false
     private var isSavePhotoAlbum = false
     
-    private var inProgressPhotoCaptureDelegates = [Int64: SPPhotoCaptureProcessor]()
+    private var inProgressPhotoCaptureDelegates = [Int64: GOPhotoCaptureProcessor]()
     private var inProgressLivePhotoCapturesCount = 0
     private var backgroundRecordingID: UIBackgroundTaskIdentifier?
     
@@ -112,7 +100,7 @@ public class SPCaptureView: UIView {
         return tap
     }()
     
-    private lazy var previewView = SPPreviewView()
+    private lazy var previewView = GOPreviewView()
     
     private lazy var focusImageView: UIImageView = {
         let image = UIImageView(frame: CGRect(x: 0, y: 0, width: 80, height: 80))
@@ -177,7 +165,7 @@ public class SPCaptureView: UIView {
     }
 }
 
-extension SPCaptureView {
+extension GOCaptureView {
     
     private func configureSession() {
         if setupResult != .success {
@@ -264,7 +252,7 @@ extension SPCaptureView {
     
     func config() {
         DispatchQueue.main.async {
-            self.delegate?.setupCamera(self, setupResult: self.setupResult.rawValue)
+            self.delegate?.setupCamera?(self, setupResult: self.setupResult.rawValue)
         }
         
         sessionQueue.async {
@@ -284,7 +272,7 @@ extension SPCaptureView {
     }
 }
 
-extension SPCaptureView {
+extension GOCaptureView {
     
     private func addObservers() {
         let keyValueObservation = session.observe(\.isRunning, options: .new) { _, change in
@@ -368,12 +356,12 @@ extension SPCaptureView {
                     self.isSessionRunning = self.session.isRunning
                 } else {
                     DispatchQueue.main.async {
-                        self.delegate?.resume(self, success: false)
+                        self.delegate?.resume?(self, success: false)
                     }
                 }
             }
         } else {
-            self.delegate?.resume(self, success: false)
+            self.delegate?.resume?(self, success: false)
         }
     }
     
@@ -391,16 +379,16 @@ extension SPCaptureView {
                 
             }
             
-            delegate?.sessionInterruption(self, ended: false)
+            delegate?.sessionInterruption?(self, ended: false)
         }
     }
     
     @objc func sessionInterruptionEnded(notification: NSNotification) {
-        delegate?.sessionInterruption(self, ended: true)
+        delegate?.sessionInterruption?(self, ended: true)
     }
 }
 
-extension SPCaptureView {
+extension GOCaptureView {
     
     @objc private func focusAndExposeTap(_ gestureRecognizer: UITapGestureRecognizer) {
         let devicePoint = previewView.videoPreviewLayer.captureDevicePointConverted(fromLayerPoint: gestureRecognizer.location(in: gestureRecognizer.view))
@@ -444,7 +432,7 @@ extension SPCaptureView {
 }
 
 // MARK: - public method
-public extension SPCaptureView {
+public extension GOCaptureView {
     
     /// LivePhoto on/off
     func toggleLivePhotoMode() {
@@ -572,7 +560,7 @@ public extension SPCaptureView {
             
             photoSettings.photoQualityPrioritization = self.photoQualityPrioritizationMode
             
-            let photoCaptureProcessor = SPPhotoCaptureProcessor(isLivePhoto: (self.livePhotoMode == .on), imageScale: self.imageScale, isSavePhotoAlbum: self.isSavePhotoAlbum, requestedPhotoSettings: photoSettings, willCapturePhotoAnimation: {
+            let photoCaptureProcessor = GOPhotoCaptureProcessor(isLivePhoto: (self.livePhotoMode == .on), imageScale: self.imageScale, isSavePhotoAlbum: self.isSavePhotoAlbum, requestedPhotoSettings: photoSettings, willCapturePhotoAnimation: {
                 
                 //                DispatchQueue.main.async {
                 //                    self.previewView.videoPreviewLayer.opacity = 0
@@ -605,7 +593,7 @@ public extension SPCaptureView {
                     self.inProgressPhotoCaptureDelegates[photoCaptureProcessor.requestedPhotoSettings.uniqueID] = nil
                 }
                 DispatchQueue.main.async {
-                    self.delegate?.didFinishCapture(self, photoData: data, moviePath: path, semanticSegmentationMatteDatas: semanticSegmentationMatteDatas, error: error)
+                    self.delegate?.didFinishCapture?(self, photoData: data, moviePath: path, semanticSegmentationMatteDatas: semanticSegmentationMatteDatas, error: error)
                 }
             }, photoProcessingHandler: { animate in
                 
@@ -617,7 +605,7 @@ public extension SPCaptureView {
                     }
                 }
             }, savePhotoAlbumHandler: { success in
-                self.delegate?.didFinishSavePhotoAlbum(self, success: success)
+                self.delegate?.didFinishSavePhotoAlbum?(self, success: success)
             })
             
             self.inProgressPhotoCaptureDelegates[photoCaptureProcessor.requestedPhotoSettings.uniqueID] = photoCaptureProcessor
@@ -731,7 +719,7 @@ public extension SPCaptureView {
             self.isSessionRunning = self.session.isRunning
             
             DispatchQueue.main.async {
-                self.delegate?.resume(self, success: self.session.isRunning)
+                self.delegate?.resume?(self, success: self.session.isRunning)
             }
         }
     }
@@ -917,7 +905,7 @@ public extension SPCaptureView {
 }
 
 // MARK: - AVCaptureFileOutputRecordingDelegate
-extension SPCaptureView: AVCaptureFileOutputRecordingDelegate {
+extension GOCaptureView: AVCaptureFileOutputRecordingDelegate {
     
     public func fileOutput(_ output: AVCaptureFileOutput, didStartRecordingTo fileURL: URL, from connections: [AVCaptureConnection]) {
         
@@ -958,11 +946,11 @@ extension SPCaptureView: AVCaptureFileOutputRecordingDelegate {
                         let creationRequest = PHAssetCreationRequest.forAsset()
                         creationRequest.addResource(with: .video, fileURL: outputFileURL, options: options)
                     }, completionHandler: { success, error in
-                        self.delegate?.didFinishSavePhotoAlbum(self, success: success)
+                        self.delegate?.didFinishSavePhotoAlbum?(self, success: success)
                         cleanup()
                     })
                 } else {
-                    self.delegate?.didFinishSavePhotoAlbum(self, success: false)
+                    self.delegate?.didFinishSavePhotoAlbum?(self, success: false)
                     cleanup()
                 }
             }
@@ -970,7 +958,7 @@ extension SPCaptureView: AVCaptureFileOutputRecordingDelegate {
             cleanup()
         }
         
-        self.delegate?.didFinishRecording(self, videoPath: outputFileURL.path, error: error)
+        self.delegate?.didFinishRecording?(self, videoPath: outputFileURL.path, error: error)
         
         self.isTakePhotoEnabled = true
         self.isToggleCameraEnabled = self.videoDeviceDiscoverySession.uniqueDevicePositionsCount > 1
@@ -978,7 +966,7 @@ extension SPCaptureView: AVCaptureFileOutputRecordingDelegate {
     }
 }
 
-extension SPCaptureView {
+extension GOCaptureView {
     
     @objc func orientationNotification(_ noti: Notification) {
         

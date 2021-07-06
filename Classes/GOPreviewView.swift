@@ -1,6 +1,6 @@
 //
-//  SPPreviewView.swift
-//  SPCaptureView
+//  GOPreviewView.swift
+//  GOCaptureView
 //
 //  Created by 高文立 on 2020/7/30.
 //
@@ -8,7 +8,7 @@
 import UIKit
 import AVFoundation
 
-class SPPreviewView: UIView {
+@objcMembers class GOPreviewView: UIView {
     
     var videoPreviewLayer: AVCaptureVideoPreviewLayer {
         guard let layer = layer as? AVCaptureVideoPreviewLayer else {

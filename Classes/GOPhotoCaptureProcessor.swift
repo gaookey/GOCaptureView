@@ -1,6 +1,6 @@
 //
-//  SPPhotoCaptureProcessor.swift
-//  SPCaptureView
+//  GOPhotoCaptureProcessor.swift
+//  GOCaptureView
 //
 //  Created by 高文立 on 2020/7/30.
 //
@@ -9,13 +9,13 @@ import UIKit
 import AVFoundation
 import Photos
 
-class SPPhotoCaptureProcessor: NSObject {
+@objcMembers class GOPhotoCaptureProcessor: NSObject {
     
     private(set) var requestedPhotoSettings: AVCapturePhotoSettings
     private let willCapturePhotoAnimation: () -> Void
     private let livePhotoCaptureHandler: (Bool) -> Void
     private lazy var context = CIContext()
-    private let completionHandler: (Data?, String?, [Data], Error?, SPPhotoCaptureProcessor) -> Void
+    private let completionHandler: (Data?, String?, [Data], Error?, GOPhotoCaptureProcessor) -> Void
     private let photoProcessingHandler: (Bool) -> Void
     private let savePhotoAlbumHandler: (Bool) -> Void
     private var portraitEffectsMatteData: Data?
@@ -35,7 +35,7 @@ class SPPhotoCaptureProcessor: NSObject {
          requestedPhotoSettings: AVCapturePhotoSettings,
          willCapturePhotoAnimation: @escaping () -> Void,
          livePhotoCaptureHandler: @escaping (Bool) -> Void,
-         completionHandler: @escaping (Data?, String?, [Data], Error?, SPPhotoCaptureProcessor) -> Void,
+         completionHandler: @escaping (Data?, String?, [Data], Error?, GOPhotoCaptureProcessor) -> Void,
          photoProcessingHandler: @escaping (Bool) -> Void,
          savePhotoAlbumHandler: @escaping (Bool) -> Void) {
         
@@ -65,7 +65,7 @@ class SPPhotoCaptureProcessor: NSObject {
 }
 
 // MARK: - AVCapturePhotoCaptureDelegate
-extension SPPhotoCaptureProcessor: AVCapturePhotoCaptureDelegate {
+extension GOPhotoCaptureProcessor: AVCapturePhotoCaptureDelegate {
     
     // 设置完毕
     func photoOutput(_ output: AVCapturePhotoOutput, willBeginCaptureFor resolvedSettings: AVCaptureResolvedPhotoSettings) {
@@ -196,7 +196,7 @@ extension SPPhotoCaptureProcessor: AVCapturePhotoCaptureDelegate {
     }
 }
 
-extension SPPhotoCaptureProcessor {
+extension GOPhotoCaptureProcessor {
     
     func handleMatteData(_ photo: AVCapturePhoto, ssmType: AVSemanticSegmentationMatte.MatteType) {
         

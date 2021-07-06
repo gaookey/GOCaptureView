@@ -1,4 +1,4 @@
-# SPCaptureView
+# GOCaptureView
 
 ### 自定义相机 demo
 
@@ -127,7 +127,7 @@ func stop()
 
 ##### 代理 
 
-**`SPCaptureViewDelegate`**
+**`GOCaptureViewDelegate`**
 
 ```swift
 func didFinishRecording(_ view: UIView, videoPath: String, error: Error?) { }
